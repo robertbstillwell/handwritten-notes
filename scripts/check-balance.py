@@ -1,51 +1,53 @@
 #!/usr/bin/env python3
-"""Check remaining Simply Noted credits."""
+"""Check Simply Noted account status and payment method."""
 
-import json
-import os
-import sys
-
+import os, sys, json
 import requests
 from dotenv import load_dotenv
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 API_KEY = os.getenv('SIMPLY_NOTED_API_KEY')
-BASE_URL = 'https://api.simplynoted.com/api'
+USER_ID = os.getenv('SIMPLY_NOTED_USER_ID')
+BASE_URL = 'https://live.simplynoted.com/api/v2'
 
+def headers():
+    return {'x-api-key': API_KEY, 'x-user-id': USER_ID, 'Content-Type': 'application/json'}
 
-def check_balance():
-    if not API_KEY:
-        print('ERROR: SIMPLY_NOTED_API_KEY not found in .env file.')
-        sys.exit(1)
+if not API_KEY or not USER_ID:
+    print('ERROR: Missing SIMPLY_NOTED_API_KEY or SIMPLY_NOTED_USER_ID in .env')
+    sys.exit(1)
 
-    headers = {
-        'Authorization': f'Bearer {API_KEY}',
-        'Content-Type': 'application/json',
-    }
+print('Checking Simply Noted account...\n')
 
-    print('Checking Simply Noted credit balance...\n')
-    resp = requests.get(f'{BASE_URL}/credits', headers=headers)
+# Payment method
+resp = requests.get(f'{BASE_URL}/payments/payment_method_status', headers=headers())
+if resp.status_code == 200:
+    data = resp.json()
+    pm = data.get('payment_method', {})
+    print(f'Payment method: {pm.get("brand","?").upper()} ending in {pm.get("last4","?")}')
+else:
+    print(f'ERROR: {resp.status_code} — {resp.text[:200]}')
+    sys.exit(1)
 
-    if resp.status_code == 200:
-        data = resp.json()
-        if isinstance(data, dict):
-            credits = data.get('credits', data.get('balance', 'Unknown'))
-            print(f'Remaining credits: {credits}')
-            if isinstance(credits, (int, float)):
-                cost_per_note = 3.58
-                print(f'Estimated notes remaining: {int(credits)}')
-                print(f'Estimated value: ${credits * cost_per_note:.2f}')
-        else:
-            print(f'Credits info: {data}')
-    else:
-        print(f'ERROR: API returned status {resp.status_code}')
-        print(resp.text)
-        if resp.status_code == 401:
-            print('\nTip: Check that your SIMPLY_NOTED_API_KEY in .env is correct.')
-            print('Get your API key from your Simply Noted account under Account Details.')
-        sys.exit(1)
+# Cards
+resp = requests.get(f'{BASE_URL}/cards', headers=headers())
+cards = resp.json().get('cards', [])
+print(f'\nCards in account ({len(cards)}):')
+for c in cards:
+    print(f'  [{c["id"]}] {c["name"]} ({c["orientation"]})')
 
+# Sender profiles
+resp = requests.get(f'{BASE_URL}/sender_profiles', headers=headers())
+profiles = resp.json().get('sender_profiles', [])
+print(f'\nSender profiles ({len(profiles)}):')
+for p in profiles:
+    print(f'  [{p["id"]}] {p["first_name"]} {p["last_name"]} — {p["return_address"].split(chr(10))[0]}')
+    print(f'    Handwriting: {p["handwriting_style"]}')
 
-if __name__ == '__main__':
-    check_balance()
+# Recent mailings
+resp = requests.get(f'{BASE_URL}/mailings', headers=headers())
+mailings = resp.json().get('mailings', [])
+print(f'\nRecent mailings ({len(mailings)}):')
+for m in mailings:
+    print(f'  [{m["id"][:8]}...] {m["name"]} — Status: {m["status"]}')

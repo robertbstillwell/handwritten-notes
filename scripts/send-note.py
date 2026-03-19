@@ -13,7 +13,8 @@ from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 API_KEY = os.getenv('SIMPLY_NOTED_API_KEY')
-BASE_URL = 'https://api.simplynoted.com/api'
+USER_ID = os.getenv('SIMPLY_NOTED_USER_ID')
+BASE_URL = 'https://live.simplynoted.com/api/v2'
 
 DEFAULT_FROM_NAME = 'Robert Stillwell'
 DEFAULT_FROM_ADDRESS = '1598 Red Oak Lane'
@@ -87,7 +88,8 @@ def send_note(args):
 
     # Send
     headers = {
-        'Authorization': f'Bearer {API_KEY}',
+        'x-api-key': API_KEY,
+        'x-user-id': USER_ID,
         'Content-Type': 'application/json',
     }
 

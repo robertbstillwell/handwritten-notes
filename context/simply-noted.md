@@ -73,3 +73,12 @@ The `.env` file holds:
 4. **3-5 business day shipping** — plan accordingly for time-sensitive outreach
 5. **Card design matters** — always let Robert pick or confirm the card design
 6. **Handwriting styles vary** — "Tarzan" is the default but there are others available
+
+## Your Account (confirmed working)
+
+- **Base URL:** `https://live.simplynoted.com/api/v2`
+- **Auth headers:** `x-api-key` + `x-user-id` (NOT Bearer token)
+- **Card ID:** `395c7798-3541-4548-8a55-16298551cb28` (Hibbs Health)
+- **Sender Profile ID:** `09623e9c-3dd5-4e39-b9fb-e59bcb2e4d82` (Robert Stillwell, Hoffman handwriting)
+- **Payment:** Visa ending 3225
+- **Credits:** Pre-purchased ($3.58/note) — confirm before every send
