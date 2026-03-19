@@ -82,3 +82,13 @@ The `.env` file holds:
 - **Sender Profile ID:** `09623e9c-3dd5-4e39-b9fb-e59bcb2e4d82` (Robert Stillwell, Hoffman handwriting)
 - **Payment:** Visa ending 3225
 - **Credits:** Pre-purchased ($3.58/note) — confirm before every send
+
+## Cards in Account (updated 2026-03-19)
+
+| Card Name | ID | Use For |
+|---|---|---|
+| Hibbs Health | `395c7798-3541-4548-8a55-16298551cb28` | Hibbs Health / ASC outreach |
+| Pare Wound Health | (fetch from API — added 2026-03-19) | PareHealth / podiatry outreach |
+| RevenueVitals | (fetch from API — added 2026-03-19) | RV / practice management outreach |
+
+Run `python3 scripts/check-balance.py` to get current card IDs.
