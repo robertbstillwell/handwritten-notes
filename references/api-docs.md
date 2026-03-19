@@ -1,136 +1,185 @@
-# Simply Noted API Reference
+# Simply Noted API V2 — Reference
 
-Official docs: https://documenter.getpostman.com/view/3418100/2sAYHxoQAD
+**Official docs:** https://documenter.getpostman.com/view/3418100/2sAYHxoQAD
+**Base URL:** `https://live.simplynoted.com/api/v2`
 
-## Base URL
-
-```
-https://api.simplynoted.com/api
-```
+---
 
 ## Authentication
 
-All requests require a Bearer token in the Authorization header:
+All requests require two headers:
 
 ```
-Authorization: Bearer <API_KEY>
+x-api-key: <your api key>
+x-user-id: <your user id>
 ```
 
-Get your API key from your Simply Noted account under Account Details.
+Use `x-actor-id` to send on behalf of another user (must be same account or authorized via integrations).
 
 ---
 
-## Endpoints
+## Payment
 
-### POST /orders — Send a Handwritten Note
+### GET /payments/payment_method_status
+Check if a payment method is on file.
 
-Creates a new order to send a handwritten note.
+```bash
+curl -H "x-api-key: $API_KEY" \
+     -H "x-user-id: $USER_ID" \
+     https://live.simplynoted.com/api/v2/payments/payment_method_status
+```
 
-**Request Body:**
+Response:
+```json
+{
+  "has_payment_method": true,
+  "payment_method": { "brand": "visa", "last4": "3225" }
+}
+```
+
+### POST /payments/charge
+Charge a specific amount.
+
+```json
+{ "amount_cents": 1500, "description": "Service fee for order #12345" }
+```
+
+---
+
+## Sender Profiles
+
+### GET /sender_profiles
+List all sender profiles on the account.
+
+```bash
+curl -H "x-api-key: $API_KEY" -H "x-user-id: $USER_ID" \
+     https://live.simplynoted.com/api/v2/sender_profiles
+```
+
+Response includes: `id`, `first_name`, `last_name`, `return_address`, `handwriting_style`, `phone`, `email`
+
+**Robert's sender profile ID:** `09623e9c-3dd5-4e39-b9fb-e59bcb2e4d82`
+Handwriting: Hoffman | Address: 1598 Red Oak Lane, Brentwood TN 37027
+
+---
+
+## Cards
+
+### GET /cards
+List all card designs in the account.
+
+```bash
+curl -H "x-api-key: $API_KEY" -H "x-user-id: $USER_ID" \
+     https://live.simplynoted.com/api/v2/cards
+```
+
+Response includes: `id`, `name`, `orientation`, `card_front_preview_url`
+
+**Available cards:**
+| ID | Name | Orientation |
+|----|------|-------------|
+| `395c7798-3541-4548-8a55-16298551cb28` | Hibbs Health | landscape |
+
+---
+
+## Messages / Templates
+
+### GET /messages
+List saved message templates.
+
+### POST /messages
+Create a message template.
 
 ```json
 {
-  "productId": "string (card design ID)",
-  "handwritingStyle": "string (e.g. 'Tarzan', 'Claire', 'Stacy')",
-  "customMessage": "string (max 400 characters)",
-  "signoff": "string (e.g. 'Best, Robert')",
-  "shippingDate": "string (optional, ISO date for delayed send)",
-  "templateId": "string (optional, use a saved template)",
-  "recipientData": [
-    {
-      "First Name": "string",
-      "Last Name": "string",
-      "Address": "string",
-      "City": "string",
-      "State": "string (2-letter code)",
-      "Zip": "string",
-      "Phone": "string (optional)",
-      "Email": "string (optional)",
-      "Company": "string (optional)"
+  "message": {
+    "body": "Dear {{first_name}},\n\nThank you for your time...\n\nBest,\nRobert Stillwell"
+  }
+}
+```
+
+---
+
+## Mailings (Multi-recipient)
+
+### GET /mailings
+List all mailings.
+
+### POST /mailings
+Create a new mailing (send to one or more recipients via a list).
+
+```json
+{
+  "mailing": {
+    "sender_profile_id": "09623e9c-3dd5-4e39-b9fb-e59bcb2e4d82",
+    "card_id": "395c7798-3541-4548-8a55-16298551cb28",
+    "message_id": "<message id>",
+    "list_ids": ["<list id>"]
+  }
+}
+```
+
+Response: mailing object with `id`, `name`, `size`, `status`, `created_at`
+
+---
+
+## Single Card Mailings (One-off)
+
+### POST /single_card_mailings
+Send a single handwritten card without setting up lists.
+
+```json
+{
+  "single_card_mailing": {
+    "sender_profile_id": "09623e9c-3dd5-4e39-b9fb-e59bcb2e4d82",
+    "card_id": "395c7798-3541-4548-8a55-16298551cb28",
+    "message": "Dear Jane,\n\nThank you for your time...\n\nBest,\nRobert Stillwell",
+    "contact": {
+      "first_name": "Jane",
+      "last_name": "Smith",
+      "address1": "123 Main St",
+      "city": "Nashville",
+      "state": "TN",
+      "postal_code": "37201",
+      "country": "US"
     }
-  ],
-  "returnAddress": {
-    "name": "string",
-    "address": "string",
-    "city": "string",
-    "state": "string",
-    "zip": "string"
   }
 }
 ```
 
-**Response:** Order confirmation with order ID.
+---
+
+## Contact Lists
+
+### GET /lists
+List all contact lists.
+
+### POST /lists
+Create a new contact list.
+
+### POST /lists/:id/contacts
+Add contacts to a list.
 
 ---
 
-### GET /cards — List Available Card Designs
+## Gotchas (Learned the Hard Way)
 
-Returns all available standard card designs.
-
-**Query Parameters:**
-- `offset` (optional) — Pagination offset
-
-**Response:**
-
-```json
-[
-  {
-    "id": "string",
-    "title": "string",
-    "image": "string (URL)"
-  }
-]
-```
+- **Wrong base URL:** Old docs say `api.simplynoted.com` — the real URL is `live.simplynoted.com`
+- **Wrong auth:** Old docs say `Authorization: Bearer` — real auth is `x-api-key` + `x-user-id` headers
+- **`/single_card_mailings` returns 404** — confirmed not available on this account tier; use `/mailings` with a list instead
+- **Cost:** ~$3.58/note, credits pre-purchased — ALWAYS confirm with Robert before sending
+- **Card must exist in account** — you can't reference a card ID from another account
+- **Sender profile must exist** — set up in Simply Noted UI before using API
 
 ---
 
-### GET /credits — Check Credit Balance
+## Robert's Account Quick Reference
 
-Returns the current credit balance for the account.
-
-**Response:**
-
-```json
-{
-  "credits": number
-}
-```
-
----
-
-### GET /orders/customer/ — List Past Orders
-
-Returns past orders for the authenticated user.
-
-**Query Parameters:**
-- `offset` — Pagination offset (default: 0)
-- `status` — Filter by status (e.g. "any", "pending", "shipped")
-- `fulfillment_status` — Filter by fulfillment (e.g. "shipped", "unfulfilled")
-
----
-
-### POST /createcard — Create Custom Card
-
-Creates a new custom card design.
-
-### POST /modifycard — Modify Custom Card
-
-Modifies an existing flat custom card design.
-
----
-
-## Handwriting Styles
-
-Available styles include (check via API for current list):
-- Tarzan (default)
-- Claire
-- Stacy
-- And others
-
-## Notes
-
-- Each note costs approximately **$3.58**
-- Notes are physically written with real ink and mailed via USPS
-- Delivery takes **3-5 business days**
-- Messages are truncated at **400 characters**
-- All addresses must be valid US mailing addresses
+| Item | Value |
+|------|-------|
+| API Key | in `.env` as `SIMPLY_NOTED_API_KEY` |
+| User ID | `bfc897c1-8805-4f3e-9e83-71802692ddf4` |
+| Sender Profile ID | `09623e9c-3dd5-4e39-b9fb-e59bcb2e4d82` |
+| Card (Hibbs Health) | `395c7798-3541-4548-8a55-16298551cb28` |
+| Handwriting Style | Hoffman |
+| Return Address | 1598 Red Oak Lane, Brentwood, TN 37027 |
